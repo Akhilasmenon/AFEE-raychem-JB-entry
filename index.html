@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Layout Studio</title>
+    <style>
+        :root {
+            --bg-main: #0f172a;
+            --panel-bg: #1e293b;
+            --accent: #3b82f6;
+            --text: #f8fafc;
+            --text-muted: #94a3b8;
+            --border: #334155;
+            --success: #10b981;
+            --danger: #ef4444;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: system-ui, -apple-system, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-main);
+            color: var(--text);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 40px 20px;
+            min-height: 100vh;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .workspace {
+            display: flex;
+            gap: 20px;
+            width: 100%;
+            max-width: 1200px;
+        }
+
+        .sidebar {
+            width: 320px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            flex-shrink: 0;
+        }
+
+        .panel {
+            background: var(--panel-bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        label {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        input {
+            background: #0f172a;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 8px 12px;
+            color: var(--text);
+            font-size: 0.95rem;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        button {
+            background: var(--accent);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            padding: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+
+        button:hover {
+            opacity: 0.9;
+        }
+
+        .btn-alt {
+            background: transparent;
+            border: 1px solid var(--danger);
+            color: var(--danger);
+        }
+
+        .btn-alt:hover {
+            background: var(--danger);
+            color: white;
+        }
+
+        /* Brief Guide Layout */
+        .guide-panel {
+            background: #131c2e;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 20px;
+        }
+
+        .guide-panel h4 {
+            font-size: 0.9rem;
+            margin-bottom: 12px;
+            color: var(--accent);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 6px;
+        }
+
+        .feature-item {
+            margin-bottom: 10px;
+            font-size: 0.85rem;
+            line-height: 1.4;
+        }
+
+        .feature-item strong {
+            color: var(--text);
+        }
+
+        .feature-item span.desc {
+            color: var(--text-muted);
+            display: block;
+            margin-top: 1px;
+        }
+
+        .canvas-area {
+            background: var(--panel-bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 16px;
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        canvas {
+            background: #090d16;
+            border-radius: 8px;
+            box-shadow: inset 0 2px 8px rgba(0,0,0,0.5);
+        }
+
+        canvas.hovering { cursor: grab; }
+        canvas.grabbing { cursor: grabbing !important; }
+
+        @media (max-width: 950px) {
+            .workspace { flex-direction: column; }
+            .sidebar { width: 100%; }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1 style="font-size: 1.8rem; margin-bottom: 4px;">Shape Matrix Canvas</h1>
+        <p style="color: var(--text-muted); font-size: 0.95rem;">Configure boundaries, inject nodes, and manage layouts live.</p>
+    </header>
+
+    <div class="workspace">
+        <div class="sidebar">
+            <div class="panel">
+                <h3 style="font-size: 1rem; border-bottom: 1px solid var(--border); padding-bottom: 8px;">Configuration</h3>
+                
+                <div class="input-group">
+                    <label for="length">Container Width</label>
+                    <input type="number" id="length" value="450">
+                </div>
+
+                <div class="input-group">
+                    <label for="breadth">Container Height</label>
+                    <input type="number" id="breadth" value="300">
+                </div>
+
+                <button onclick="buildContainer()">Generate Box</button>
+
+                <div style="border-top: 1px solid var(--border); margin: 4px 0;"></div>
+
+                <div class="input-group">
+                    <label for="diameter">Node Diameter</label>
+                    <input type="number" id="diameter" value="60" onkeydown="if(event.key === 'Enter') spawnNode()">
+                </div>
+
+                <button style="background: var(--success);" onclick="spawnNode()">Add Element</button>
+                <button class="btn-alt" onclick="resetWorkspace()">Reset All</button>
+            </div>
+
+            <div class="guide-panel">
+                <h4>System Features</h4>
+                
+                <div class="feature-item">
+                    <strong>1. Box Container</strong>
+                    <span class="desc">Enter size and click <b>Generate Box</b> to create the boundary layout.</span>
+                </div>
+
+                <div class="feature-item">
+                    <strong>2. Add Nodes</strong>
+                    <span class="desc">Enter diameter. Click <b>Add</b> or press <b>Enter</b> repeatedly to stack circles.</span>
+                </div>
+
+                <div class="feature-item">
+                    <strong>3. Drag & Move</strong>
+                    <span class="desc">Click and drag nodes to slide them securely inside the box limits.</span>
+                </div>
+
+                <div class="feature-item">
+                    <strong>4. Intersection Check</strong>
+                    <span class="desc">Circles turn <span style="color: var(--success); font-weight: 600;">Green</span> safely, but turn <span style="color: var(--danger); font-weight: 600;">Red</span> instantly upon overlapping.</span>
+                </div>
+
+                <div class="feature-item">
+                    <strong>5. Fast Delete</strong>
+                    <span class="desc"><b>Double-click</b> directly on an individual node to remove it instantly.</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="canvas-area">
+            <canvas id="stage" width="700" height="520"></canvas>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById("stage");
+        const ctx = canvas.getContext("2d");
+
+        let rectangle = null;
+        let circles = [];
+
+        let isDragging = false;
+        let draggedCircleIndex = null;
+        let offsetX = 0;
+        let offsetY = 0;
+
+        window.onload = () => {
+            buildContainer();
+        };
+
+        function buildContainer() {
+            const length = parseFloat(document.getElementById("length").value) || 400;
+            const breadth = parseFloat(document.getElementById("breadth").value) || 300;
+
+            rectangle = {
+                x: (canvas.width - length) / 2,
+                y: (canvas.height - breadth) / 2,
+                width: length,
+                height: breadth
+            };
+
+            circles = []; 
+            render();
+        }
+
+        function spawnNode() {
+            if (!rectangle) {
+                alert("Please create a box container first!");
+                return;
+            }
+
+            const d = parseFloat(document.getElementById("diameter").value) || 50;
+            const r = d / 2;
+
+            if (d > rectangle.width || d > rectangle.height) {
+                alert("Node diameter is too large for the container box!");
+                return;
+            }
+
+            const stagger = (circles.length * 15) % Math.min(60, rectangle.width - d);
+
+            circles.push({
+                x: rectangle.x + r + 15 + stagger,
+                y: rectangle.y + r + 15 + stagger,
+                r: r
+            });
+
+            render();
+        }
+
+        function render() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            if (rectangle) {
+                ctx.strokeStyle = "#3b82f6";
+                ctx.lineWidth = 2.5;
+                ctx.setLineDash([6, 4]); 
+                ctx.strokeRect(rectangle.x, rectangle.y, rectangle.width, rectangle.height);
+                ctx.setLineDash([]); 
+            }
+
+            circles.forEach((c, index) => {
+                let isIntersecting = false;
+
+                circles.forEach((other, otherIndex) => {
+                    if (index === otherIndex) return;
+
+                    const dx = c.x - other.x;
+                    const dy = c.y - other.y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+
+                    if (dist < c.r + other.r) {
+                        isIntersecting = true;
+                    }
+                });
+
+                ctx.beginPath();
+                ctx.arc(c.x, c.y, c.r, 0, Math.PI * 2);
+                
+                if (isIntersecting) {
+                    ctx.fillStyle = "rgba(239, 68, 68, 0.3)"; 
+                    ctx.strokeStyle = "#ef4444";
+                } else {
+                    ctx.fillStyle = "rgba(16, 185, 129, 0.2)"; 
+                    ctx.strokeStyle = "#10b981";
+                }
+
+                ctx.lineWidth = 2;
+                ctx.fill();
+                ctx.stroke();
+            });
+        }
+
+        function resetWorkspace() {
+            rectangle = null;
+            circles = [];
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
+
+        function getMousePos(e) {
+            const rect = canvas.getBoundingClientRect();
+            return {
+                x: e.clientX - rect.left,
+                y: e.clientY - rect.top
+            };
+        }
+
+        function detectTargetCircle(mousePos) {
+            for (let i = circles.length - 1; i >= 0; i--) {
+                const c = circles[i];
+                const dx = mousePos.x - c.x;
+                const dy = mousePos.y - c.y;
+                if (Math.sqrt(dx * dx + dy * dy) <= c.r) {
+                    return i;
+                }
+            }
+            return null;
+        }
+
+        canvas.addEventListener("mousedown", (e) => {
+            const mousePos = getMousePos(e);
+            const targetIndex = detectTargetCircle(mousePos);
+
+            if (targetIndex !== null) {
+                isDragging = true;
+                draggedCircleIndex = targetIndex;
+                offsetX = mousePos.x - circles[targetIndex].x;
+                offsetY = mousePos.y - circles[targetIndex].y;
+                canvas.className = "grabbing";
+            }
+        });
+
+        canvas.addEventListener("mousemove", (e) => {
+            const mousePos = getMousePos(e);
+
+            if (!isDragging) {
+                const hasTarget = detectTargetCircle(mousePos) !== null;
+                canvas.className = hasTarget ? "hovering" : "";
+            }
+
+            if (!isDragging || draggedCircleIndex === null || !rectangle) return;
+
+            let targetX = mousePos.x - offsetX;
+            let targetY = mousePos.y - offsetY;
+
+            const c = circles[draggedCircleIndex];
+
+            const minX = rectangle.x + c.r;
+            const maxX = rectangle.x + rectangle.width - c.r;
+            const minY = rectangle.y + c.r;
+            const maxY = rectangle.y + rectangle.height - c.r;
+
+            if (targetX < minX) targetX = minX;
+            if (targetX > maxX) targetX = maxX;
+            if (targetY < minY) targetY = minY;
+            if (targetY > maxY) targetY = maxY;
+
+            c.x = targetX;
+            c.y = targetY;
+
+            render();
+        });
+
+        const drop = () => {
+            isDragging = false;
+            draggedCircleIndex = null;
+            canvas.className = "";
+        };
+
+        canvas.addEventListener("mouseup", drop);
+        canvas.addEventListener("mouseleave", drop);
+
+        canvas.addEventListener("dblclick", (e) => {
+            const mousePos = getMousePos(e);
+            const targetIndex = detectTargetCircle(mousePos);
+
+            if (targetIndex !== null) {
+                circles.splice(targetIndex, 1);
+                render();
+            }
+        });
+    </script>
+</body>
+</html>
